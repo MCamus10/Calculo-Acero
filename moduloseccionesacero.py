@@ -610,7 +610,7 @@ class Perfilcaplegado:
     
     def Xp(self):
         A = Perfilcaplegado.A(self)
-        A1 = (self.r + self.t/2)**2 * np.atan(self.t / self.r) - self.R * self.r /2
+        A1 = (self.r + self.t/2)**2 * np.arctan(self.t / self.r) - self.R * self.r /2
         if self.t * (self.b + self.c + self.u) >= A/4:
             xp = (self.B + self.d - self.D/2)/2
             print(f"Caso 1: (Xp = {xp}) >= {self.R + self.t}, eje en el tramo recto del ala")
@@ -636,10 +636,15 @@ class Perfilcaplegado:
         return ix
     
     def Sx(self):
-
+        Ix = Perfilcaplegado.Ix(self)
+        sx = Ix / (self.D/2)
+        return sx
 
     def rx(self):
-
+        Ix = Perfilcaplegado.Ix(self)
+        A = Perfilcaplegado.A(self)
+        rx = np.sqrt(Ix / A)
+        return rx
     
     def Iy(self):
         A = Perfilcaplegado.A(self)
@@ -647,14 +652,49 @@ class Perfilcaplegado:
         iy = 2*self.t * (0.0833*self.b**3 + self.b * (self.b/2 + self.r)**2 + 0.505*self.r**3 + self.c * (self.b + 2*self.r)**2 + self.u*(self.b + 1.637*self.r)**2) - A*(x - self.t/2)**2
         return iy
     
-    def Sy(self):
-
+    def Sy_der(self):
+        Iy = Perfilcaplegado.Iy(self)
+        cg = Perfilcaplegado.cg(self)
+        sy = Iy / (self.B - cg)
+        return sy
+    
+    def Sy_izq(self):
+        Iy = Perfilcaplegado.Iy(self)
+        cg = Perfilcaplegado.cg(self)
+        sy = Iy / (cg)
+        return sy
 
     def ry(self):
+        Iy = Perfilcaplegado.Iy(self)
+        A = Perfilcaplegado.A(self)
+        ry = np.sqrt(Iy / A)
+        return ry
     
+    #Módulo plástico
     def Zx(self):
         zx = self.t * (self.a**2 /4 + self._a * self.b + np.pi*self.r * self.a + 4*self.r**2 + self.t**2/3 + self.c * self.a - self.c**2)
         return zx
+
+    def Zy(self):
+        xp = Perfilcaplegado.Xp(self)
+        A = Perfilcaplegado.A(self)
+        if isinstance(xp, float):
+            if xp >= (self.R + self.t):
+                zy = self.t * (self.a * (xp - self.t/2) + np.pi * self.r * self.b + (self.b + self.r + self.t/2 - xp)**2 + (xp - self.r - self.t/2)**2 + 4*self.r**2 + self.t**2/3 + 2*self.c*(self.B - xp - self.t/2))
+                print(f"Caso 1: (Xp = {xp}) >= {self.R + self.t}")
+                return zy
+            elif self.t <= xp and xp < (self.R + self.t):
+                theta = (A/2 - self.a * self.t) / (2* self.r * self.t)
+                zy = self.t * (xp * (self.a + 3*self.r * (theta - np.pi/2) - 2*(self.b + self.c)) + self.r**2 * (2* np.sin(theta) - 3*theta + 2 - np.pi/2) - self.r * self.t * (np.pi/2 + theta)/2 + self.B * (self.b + np.pi*self.r + 2*self.c) + self.t * (self.t/6 - self.a/2 - self.c))
+                print(f"Caso 2: {self.t} <= (Xp = {x}) < {self.R + self.t}")
+                return zy
+            elif xp < self.t:
+                theta2 = sp.atan(sp.sqrt(2*xp * (self.r + self.t/2) - xp**2) / (self.r + self.t/2 - xp))
+                zy = self.a * (xp**2 - self.t*xp + self.t**2/2) + (7/8*xp - self.r/2 - self.t/4) * (self.r + self.t/2)**2 * (theta2 - 0.5*sp.sin(2*theta2)) + 3/2*float(sp.pi) * self.r * self.t * (self.r + self.t/2 - xp + 2/3*self.b) + self.b * self.t * (self.B + 2*xp) + 2*self.c * self.t * (self.B - self.t/2 - xp) + 2*self.t * self.r**2 + self.t**3/6
+                print(f"Caso 3: (Xp = 3) < {self.t}")
+                return zy
+        return "-"    
+
 
 
 #751 - 72
@@ -671,13 +711,13 @@ print(f"CG: {perfilcaplegado.cg()} mm")
 print(f"Xp: {perfilcaplegado.Xp()} mm")
 print(f"Ix: {perfilcaplegado.Ix()/10**6} mm4")
 print(f"Iy: {perfilcaplegado.Iy()/10**6} mm4")
-# print(f"Sx: {perfilcaplegado.Sx()/10**3} mm3")
-# print(f"Sy_der: {perfilcaplegado.Sy_der()/10**3} mm3")
-# print(f"Sy_izq: {perfilcaplegado.Sy_izq()/10**3} mm3")
-# print(f"rx: {perfilcaplegado.rx()} mm")
-# print(f"ry: {perfilcaplegado.ry()} mm")
+print(f"Sx: {perfilcaplegado.Sx()/10**3} mm3")
+print(f"Sy_der: {perfilcaplegado.Sy_der()/10**3} mm3")
+print(f"Sy_izq: {perfilcaplegado.Sy_izq()/10**3} mm3")
+print(f"rx: {perfilcaplegado.rx()} mm")
+print(f"ry: {perfilcaplegado.ry()} mm")
 print(f"Zx: {perfilcaplegado.Zx()/10**3} mm3")
-# print(f"Zy: {perfilcaplegado.Zy()/10**3} mm3")
+print(f"Zy: {perfilcaplegado.Zy()/10**3} mm3") #ver cómo dividir por 10^3 solo si el valor es un número
 # print(f"m: {perfilcaplegado.m()} mm")
 # print(f"J: {perfilcaplegado.J()/10**4} mm4")
 # print(f"Cw: {perfilcaplegado.Cw()/10**6} mm6")
