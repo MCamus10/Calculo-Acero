@@ -2,7 +2,6 @@ import numpy as np
 import sympy as sp
 
 
-
 #Formulas obtenidas de manual ICHA
 E = 200000 #MPa
 G = 77200 #MPa
@@ -497,22 +496,22 @@ class Perfilcplegado:
         xp = Perfilcplegado.Xp(self)
         A = Perfilcplegado.A(self)
         if xp >= (self.R + self.t):
-            zy = (self.t * (self.a * (xp - self.t/2) + float(pi) * self.r * (xp - self.r - self.t/2) 
+            zy = (self.t * (self.a * (xp - self.t/2) + float(sp.pi) * self.r * (xp - self.r - self.t/2) 
                 + (self.b + self.r + self.t/2 - xp)**2 + (xp - self.r - self.t/2)**2 + 2*self.r**2 + self.t**2 /6))
             print(f"Caso 1: (Xp = {xp} >= {self.R + self.t})")
             return zy
         elif self.t <= xp and xp < (self.R + self.t):
             theta = (A/2 - self.a * self.t) / (2*self.r * self.t)
-            zy = (self.t * (xp*(self.a + self.r * (3*theta - float(pi)/2) 
+            zy = (self.t * (xp*(self.a + self.r * (3*theta - float(sp.pi)/2) 
                 - 2*self.b) + self.r**2 * (2*float(sp.sin(theta)) 
-                - 3*float(pi)*theta /2) + self.r * self.t * (float(pi)/2 - 3*theta)/2 
+                - 3*float(sp.pi)*theta /2) + self.r * self.t * (float(sp.pi)/2 - 3*theta)/2 
                 + self.b * (2* self.B - self.b) - self.a * self.t/2))
             print(f"Caso 2: {self.t} <= (Xp = {xp} < {self.R + self.t}")
             return zy
         elif xp < self.t:
             theta2 = float(sp.atan(sp.sqrt(2*xp * (self.r + self.t/2) - xp**2) / (self.r + self.t/2 - xp)))
             zy = (self.a * (xp**2 - self.t * xp + self.t**2/2) + 3/8 * xp * (self.r + self.t/2)**2 * (theta2 - 0.5*float(sp.sin(2*theta2))) 
-            + 0.5*(float(pi) * self.r * self.t - (self.r + self.t/2)**2 * (theta2 - 0.5*float(sp.sin(2*theta2)))) * (self.r + self.t/2 - xp) + 2*self.b * self.t * (self.B - self.b/2 - xp))
+            + 0.5*(float(sp.pi) * self.r * self.t - (self.r + self.t/2)**2 * (theta2 - 0.5*float(sp.sin(2*theta2)))) * (self.r + self.t/2 - xp) + 2*self.b * self.t * (self.B - self.b/2 - xp))
             print(f"Caso 3: (Xp = {xp} < {self.t})")
             return zy
 
@@ -595,7 +594,7 @@ class Perfilcaplegado:
         self.a = D - 2*(t + R)
         self._a = D - t
         self.b = B - 2*(t + R)
-        self._b = B - t/2
+        self._b = B - t
         self.c = d - t - R
         self._c = d - t/2
 
@@ -686,48 +685,244 @@ class Perfilcaplegado:
             elif self.t <= xp and xp < (self.R + self.t):
                 theta = (A/2 - self.a * self.t) / (2* self.r * self.t)
                 zy = self.t * (xp * (self.a + 3*self.r * (theta - np.pi/2) - 2*(self.b + self.c)) + self.r**2 * (2* np.sin(theta) - 3*theta + 2 - np.pi/2) - self.r * self.t * (np.pi/2 + theta)/2 + self.B * (self.b + np.pi*self.r + 2*self.c) + self.t * (self.t/6 - self.a/2 - self.c))
-                print(f"Caso 2: {self.t} <= (Xp = {x}) < {self.R + self.t}")
+                print(f"Caso 2: {self.t} <= (Xp = {xp}) < {self.R + self.t}")
                 return zy
             elif xp < self.t:
                 theta2 = sp.atan(sp.sqrt(2*xp * (self.r + self.t/2) - xp**2) / (self.r + self.t/2 - xp))
                 zy = self.a * (xp**2 - self.t*xp + self.t**2/2) + (7/8*xp - self.r/2 - self.t/4) * (self.r + self.t/2)**2 * (theta2 - 0.5*sp.sin(2*theta2)) + 3/2*float(sp.pi) * self.r * self.t * (self.r + self.t/2 - xp + 2/3*self.b) + self.b * self.t * (self.B + 2*xp) + 2*self.c * self.t * (self.B - self.t/2 - xp) + 2*self.t * self.r**2 + self.t**3/6
                 print(f"Caso 3: (Xp = 3) < {self.t}")
                 return zy
-        return "-"    
+        return "-"  
+
+    #Propiedades flexo torsionales
+    def m(self):
+        m = self._b * ((3*self._a**2 * self._b + self._c * (6*self._a**2 - 8*self._c**2))/(self._a**3 + 6*self._a**2 * self._b + self._c * (8*self._c**2 - 12*self._a * self._c + 6*self._a**2)))
+        return m
+    
+    def J(self):
+        j = self.t**3 * (self.a + 2*self.b + 2*self.c + 4*self.u) /3
+        return j
+    
+    def Cw(self):
+        cw = (self.t * self._a**2 * self._b**2)/12 * (2*self._a**3 * self._b + 3*self._a**2 * self._b**2 + 48*self._c**4 + 112*self._b * self._c**3 + 8*self._a * self._c**3 + 48*self._a * self._b * self._c**2 + 12*self._a**2 * self._c**2 + 12*self._a**2 * self._b * self._c + 6*self._a**3 * self._c) / (6*self._a**2 * self._b + (self._a + 2*self._c)**3 - 24*self._a * self._c**2)
+        return cw
+    
+    def x0(self):
+        x = Perfilcaplegado.cg(self)
+        m = Perfilcaplegado.m(self)
+        x0 = x + m - self.t/2
+        return x0
+    
+    def j(self):
+        x = Perfilcaplegado.cg(self)
+        x0 = Perfilcaplegado.x0(self)
+        Iy = Perfilcaplegado.Iy(self)
+        betaw = -(self.t * self._a**3 * (x - self.t/2)/12 + self.t * self._a * (x - self.t/2)**3)
+        betaf = self.t * ((self._b - x + self.t/2)**4 - (x - self.t/2)**4) /2 + self.t * self._a**2 * ((self._b - x + self.t/2)**2 - (x - self.t/2)**2)/4
+        betal = 2*self._c * self.t * (self._b - x + self.t/2)**3 + 2*self.t * (self._b - x + self.t/2) * ((self._a/2)**3 - (self._a/2 - self._c)**3)/3
+        j = x0 + (betaw + betaf + betal) / (2*Iy)
+        return j
+    
+    def r0(self):
+        x0 = Perfilcaplegado.x0(self)
+        Ix = Perfilcaplegado.Ix(self)
+        Iy = Perfilcaplegado.Iy(self)
+        A = Perfilcaplegado.A(self)
+        r0 = (x0**2 + (Ix + Iy)/A)**0.5
+        return r0
+    
+    def H(self):
+        x0 = Perfilcaplegado.x0(self)
+        r0 = Perfilcaplegado.r0(self)
+        h = 1 - (x0 / r0)**2
+        return h
+    
+    def ia(self):
+        Iy = Perfilcaplegado.Iy(self)
+        Sx = Perfilcaplegado.Sx(self)
+        ia = (self.D * Iy / 2 / Sx)**0.5
+        return ia
+    
+    def it(self):
+        it = self.B * self.t / self.D
+        return it
+    
+    def X1(self):
+        Sx = Perfilcaplegado.Sx(self)
+        A = Perfilcaplegado.A(self)
+        J = Perfilcaplegado.J(self)
+        x1 = np.pi / Sx * (E * G * J * A /2)**0.5
+        return x1
+    
+    def X2(self):
+        Cw = Perfilcaplegado.Cw(self)
+        Sx = Perfilcaplegado.Sx(self)
+        J = Perfilcaplegado.J(self)
+        Iy = Perfilcaplegado.Iy(self)
+        x2 = 4* Cw / Iy * (Sx / G / J)**2
+        return x2
+
+class Perfillplegado:
+    def __init__(self, D, t, R):
+        self.D = D
+        self.t = t
+        self.R = R
+        self.r = R + t/2
+        self.u = np.pi * self.r/2
+        self.a = D - t - R
+        self._a = D - t/2
+
+    def A(self):
+        a = self.t * (2*self.a + self.u)
+        return a
+    
+    def cg(self):
+        A = Perfillplegado.A(self)
+        x = self.t * (self.a * (self.r + self.t + self.a/2) + self.r * ((self.r + self.t/2) * np.pi/2 - self.r) - self.t**2/12) /A
+        return x
+    
+    #Centro plástico
+    def Xp(self):
+        if self.R >= 1.2*self.t:
+            xp = self.t/2 + 0.2929*self.r
+            if xp < self.t:
+                return t
+            else:
+                return xp
+        else:
+            return "-"
+        
+    def I(self):
+        x = Perfillplegado.cg(self)
+        # i = (self.a * self.t**3 + self.a**3 * self.t)/12 + self.a * self.t * ((x - self.t/2)**2 + (self.D - x - self.a/2)**2) + self.t * (0.1963*self.r * (4*self.r**2 + self.t**2) - 0.1592*(2*self.r**2 + self.t**2/6)**2 /self.r) + 1.5708*self.r * self.t * (x - 0.3634*self.r - self.t/2 + 0.0531*self.t**2 /self.r)**2
+        Rext = self.r + self.t/2
+        Rint = self.r - self.t/2
+        Ac = np.pi/4 * (Rext**2 - Rint**2)
+        c = 4* (Rext**3 - Rint**3) / (3*np.pi * (Rext**2 - Rint**2))
+        yc = Rext - c
+        Ibase = np.pi/16 * (Rext**4 - Rint**4)
+        T1 = self.t * self.a**3 /12 + (self.a * self.t) * (x - (Rext + self.a/2))**2
+        T2 = self.a * self.t**3 /12 + (self.a * self.t) * (x - self.t/2)**2
+        T3 = (Ibase - Ac * c**2) + Ac * (x - yc)**2
+        i = T1 + T2 + T3
+        return i
+    
+    def Ixy(self):
+        x = Perfillplegado.cg(self)
+        # ixy = self.t * (self.a/2 * (self.t - 2*x) * (2*self.R + 2*self.t - 2*x + self.a) + self.r/8 * (4*self.r**2 + self.t**2) + (np.pi * (x - self.r - self.t/2) + 2*self.r**2 + (self.t**2)/6)**2 / (2*np.pi*self.r) - (2*self.r**2 + (self.t**2)/6)**2 / (2*np.pi*self.r))
+        Rext = self.r + self.t/2
+        Rint = self.r - self.t/2
+        Ac = np.pi/4 * (Rext**2 - Rint**2)
+        ccurv = 4* (Rext**3 - Rint**3) / (3*np.pi * (Rext**2 - Rint**2))
+        Ixy_c = (1/8 * (Rext**4 - Rint**4)) - Ac * ccurv**2
+        ixy = 2*((self.a * self.t) * (self.t/2 - x) * (Rext + self.a/2 - x)) + (Ixy_c + Ac * (Rext - ccurv - x)**2) 
+        return ixy
+    
+    def Iu(self):
+        Ix = Perfillplegado.I(self)
+        Ixy = Perfillplegado.Ixy(self)
+        iu = Ix - Ixy
+        return iu
+    
+    def ru(self):
+        Iu = Perfillplegado.Iu(self)
+        A = Perfillplegado.A(self)
+        return (Iu / A)**0.5
+    
+    def Iv(self):
+        Ix = Perfillplegado.I(self)
+        Ixy = Perfillplegado.Ixy(self)
+        iv = Ix + Ixy
+        return iv
+    
+    def rv(self):
+        Iv = Perfillplegado.Iv(self)
+        A = Perfillplegado.A(self)
+        return (Iv / A)**0.5
+    
+    def Ssup(self):
+        I = Perfillplegado.I(self)
+        x = Perfillplegado.cg(self)
+        ysup = self.D - x
+        S = I / ysup
+        return S
+
+    def Sinf(self):
+        I = Perfillplegado.I(self)
+        x = Perfillplegado.cg(self)
+        S = I / x
+        return S
+    
+    def rxy(self):
+        I = Perfillplegado.I(self)
+        A = Perfillplegado.A(self)
+        return (I / A)**0.5
+    
+    #Módulo plástico
+    def Z(self):
+        z = self.t * (self.a * (self.D - self.a/2 - self.t/2) + 0.4142*self.r**2 - self.t**2/12)
+        return z
+    
+    #Propiedades flexo torsionales
+    def J(self):
+        j = self.t**3 * (2*self.a + self.u)/3
+        return j
+    
+    def Cw(self):
+        cw = self.t**3 * self._a**3 / 18
+        return cw
+    
+    def x0(self):
+        x = Perfillplegado.cg(self)
+        x0 = (x - self.t/2) * 2**0.5
+        return x0
+    
+    def j(self):
+        Iv = Perfillplegado.Iv(self)
+        x0 = Perfillplegado.x0(self)
+        j = 2**0.5 * self.t * self._a**4 / 48 / Iv + x0
+        return j
+    
+    def r0(self):
+        x0 = Perfillplegado.x0(self)
+        A = Perfillplegado.A(self)
+        Ix = Perfillplegado.I(self)
+        r0 = ((x0**2) + 2*Ix / A)**0.5
+        return r0
+    
+    def H(self):
+        x0 = Perfillplegado.x0(self)
+        r0 = Perfillplegado.r0(self)
+        h = 1 - (x0/r0)**2
+        return h
+        
+    
 
 
-
-#751 - 72
-D = 225 #mm
-B = 50 #mm
-d = 20 #mm
-t = 5 #mm
-R = 7.5 #mm
+#753 - 78
+D = 200 #mm
+t = 16 #mm
+R = 24 #mm
 
 
-perfilcaplegado = Perfilcaplegado(D, B, d, t, R)
-print(f"A: {perfilcaplegado.A()} mm2")
-print(f"CG: {perfilcaplegado.cg()} mm")
-print(f"Xp: {perfilcaplegado.Xp()} mm")
-print(f"Ix: {perfilcaplegado.Ix()/10**6} mm4")
-print(f"Iy: {perfilcaplegado.Iy()/10**6} mm4")
-print(f"Sx: {perfilcaplegado.Sx()/10**3} mm3")
-print(f"Sy_der: {perfilcaplegado.Sy_der()/10**3} mm3")
-print(f"Sy_izq: {perfilcaplegado.Sy_izq()/10**3} mm3")
-print(f"rx: {perfilcaplegado.rx()} mm")
-print(f"ry: {perfilcaplegado.ry()} mm")
-print(f"Zx: {perfilcaplegado.Zx()/10**3} mm3")
-print(f"Zy: {perfilcaplegado.Zy()/10**3} mm3") #ver cómo dividir por 10^3 solo si el valor es un número
-# print(f"m: {perfilcaplegado.m()} mm")
-# print(f"J: {perfilcaplegado.J()/10**4} mm4")
-# print(f"Cw: {perfilcaplegado.Cw()/10**6} mm6")
-# print(f"j: {perfilcaplegado.j()} mm")
-# print(f"x0: {perfilcaplegado.x0()} mm")
-# print(f"r0: {perfilcaplegado.r0()} mm")
-# print(f"H: {perfilcaplegado.H()} mm")
-# print(f"ia: {perfilcaplegado.ia()} mm")
-# print(f"it: {perfilcaplegado.it()} mm")
-# print(f"X1: {perfilcaplegado.X1()} MPa")
-# print(f"X2: {perfilcaplegado.X2()*10**8} (1/MPa)^2")
+perfillplegado = Perfillplegado(D, t, R)
+print(f"A: {perfillplegado.A()} mm2")
+print(f"CG: {perfillplegado.cg()} mm")
+print(f"Xp: {perfillplegado.Xp()} mm")
+print(f"Ix = Iy: {perfillplegado.I()/10**6} mm4")
+print(f"Zx = Zy: {perfillplegado.Z()/10**3} mm3")
+print(f"Ssup: {perfillplegado.Ssup()/10**3} mm3")
+print(f"Sinf: {perfillplegado.Sinf()/10**3} mm3") 
+print(f"r: {perfillplegado.rxy()} mm")
+print(f"Iu: {perfillplegado.Iu()/10**6} mm4") 
+print(f"ru: {perfillplegado.ru()} mm") 
+print(f"Iv: {perfillplegado.Iv()/10**6} mm4")
+print(f"rv: {perfillplegado.rv()} mm")
+print(f"J: {perfillplegado.J()/10**4} mm4")
+print(f"Cw: {perfillplegado.Cw()/10**6} mm6")
+print(f"j: {perfillplegado.j()} mm")
+print(f"x0: {perfillplegado.x0()} mm")
+print(f"r0: {perfillplegado.r0()} mm")
+print(f"H: {perfillplegado.H()} mm")
 
 
