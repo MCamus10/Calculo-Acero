@@ -896,33 +896,109 @@ class Perfillplegado:
         h = 1 - (x0/r0)**2
         return h
         
+class Perfilcajonplegado:
+    def __init__(self, D, B, R, t):
+        self.D = D
+        self.B = B
+        self.R = R
+        self.t = t
+        self.r = R + t/2
+        self.u = np.pi * self.r/2
+        self.a = D - 2*(t + R)
+        self._a = D - t
+        self.b = B - 2*(t + R)
+        self._b = B - t
+
+    def A(self):
+        a = 2* self.t * (self.a + self.b + 2*self.u)
+        return a
+
+    def Ix(self):
+        ix = 1/6 * (self.t * self.a**3 + self.b * self.t**3) + 2*self.t * self.b * (self.a/2 + self.r)**2 + self.t/4/np.pi/self.r * ((np.pi * self.r)**2 * (4*self.r**2 + self.t**2) - 8*(2*self.r**2 + self.t**2/6)**2 + 2*(np.pi * self.r * self.a + 4*self.r**2 + self.t**2/3)**2)
+        return ix
+
+    def Iy(self):
+        iy = 1/6 * (self.t * self.b**3 + self.a * self.t**3) + 2*self.t * self.a * (self.b/2 + self.r)**2 + self.t/4/np.pi/self.r * ((np.pi * self.r)**2 * (4*self.r**2 + self.t**2) - 8*(2*self.r**2 + self.t**2/6)**2 + 2*(np.pi * self.r * self.b + 4*self.r**2 + self.t**2/3)**2)
+        return iy
+
+    def Sx(self):
+        Ix = Perfilcajonplegado.Ix(self)
+        sx = Ix / (self.D/2)
+        return sx
+
+    def Sy(self):
+        Iy = Perfilcajonplegado.Iy(self)
+        sy = Iy / (self.B/2)
+        return sy
+
+    def rx(self):
+        Ix = Perfilcajonplegado.Ix(self)
+        A = Perfilcajonplegado.A(self)
+        return (Ix / A)**0.5
+
+    def ry(self):
+        Iy = Perfilcajonplegado.Iy(self)
+        A = Perfilcajonplegado.A(self)
+        return (Iy / A)**0.5
     
+    def Zx(self):
+        zx = self.t * self.a**2 / 2 + self.b * self.t * (self.a + 2*self.r) + self.t * (np.pi * self.r * self.a + 4*self.r**2 + self.t**2/3)
+        return zx
+    
+    def Zy(self):
+        zy = self.t * self.b**2 /2 + self.a * self.t * (self.b + 2*self.r) + self.t * (np.pi * self.r * self.b + 4*self.r**2 + self.t**2/2)
+        return zy
+    
+    def J(self):
+        j = 2* self.t * self._a**2 * self._b**2 / (self._a + self._b)
+        return j
+    
+class Perfiltubularcircular:
+    def __init__(self, D, t):
+        self.D = D
+        self.Dint = D - 2*t
+        self.t = t
+        self.r = D/2 - t/2
 
+    def A(self):
+        a = np.pi/4 * (self.D**2 - self.Dint**2)
+        return a
+    
+    def I(self):
+        i = np.pi/64 * (self.D**4 - self.Dint**4)
+        return i
+    
+    def S(self):
+        I = Perfiltubularcircular.I(self)
+        s = I / (self.D/2)
+        return s
+    
+    def rxy(self):
+        I = Perfiltubularcircular.I(self)
+        A = Perfiltubularcircular.A(self)
+        return (I / A)**0.5
+    
+    def Z(self):
+        A = Perfiltubularcircular.A(self)
+        z = A/np.pi/self.r * (2*self.r**2 + self.t**2/6)
+        return z
+    
+    def J(self):
+        I = Perfiltubularcircular.I(self)
+        j = 2*I
+        return j
 
-#753 - 78
-D = 200 #mm
-t = 16 #mm
-R = 24 #mm
+#754 - 80
+D = 12.7 #mm
+t = 0.9 #mm
 
+perfilcircular = Perfiltubularcircular(D, t)
+print(f"A: {perfilcircular.A()} mm2")
+print(f"I: {perfilcircular.I()/10**6} mm4")
+print(f"S: {perfilcircular.S()/10**3} mm3")
+print(f"r: {perfilcircular.rxy()} mm")
+print(f"Z: {perfilcircular.Z()/10**3} mm3")
+print(f"J: {perfilcircular.J()/10**4} mm4")
 
-perfillplegado = Perfillplegado(D, t, R)
-print(f"A: {perfillplegado.A()} mm2")
-print(f"CG: {perfillplegado.cg()} mm")
-print(f"Xp: {perfillplegado.Xp()} mm")
-print(f"Ix = Iy: {perfillplegado.I()/10**6} mm4")
-print(f"Zx = Zy: {perfillplegado.Z()/10**3} mm3")
-print(f"Ssup: {perfillplegado.Ssup()/10**3} mm3")
-print(f"Sinf: {perfillplegado.Sinf()/10**3} mm3") 
-print(f"r: {perfillplegado.rxy()} mm")
-print(f"Iu: {perfillplegado.Iu()/10**6} mm4") 
-print(f"ru: {perfillplegado.ru()} mm") 
-print(f"Iv: {perfillplegado.Iv()/10**6} mm4")
-print(f"rv: {perfillplegado.rv()} mm")
-print(f"J: {perfillplegado.J()/10**4} mm4")
-print(f"Cw: {perfillplegado.Cw()/10**6} mm6")
-print(f"j: {perfillplegado.j()} mm")
-print(f"x0: {perfillplegado.x0()} mm")
-print(f"r0: {perfillplegado.r0()} mm")
-print(f"H: {perfillplegado.H()} mm")
 
 
