@@ -1,10 +1,159 @@
 import numpy as np
 import sympy as sp
+from materiales import E, G
 
 
 #Formulas obtenidas de manual ICHA
-E = 200000 #MPa
-G = 77200 #MPa
+
+#Perfilhsoldado2 contiene las fórmulas para las propiedades de una viga H con alas de distinta medida.
+#Para perfil H simetrico utilizar Perfilhsoldado
+class Perfilhsoldado2:
+    def __init__(self, h, bfs, bfi, tfs, tfi, tw):
+        self.h = h
+        self.d = h + tfs + tfi
+        self.bfs = bfs
+        self.bfi = bfi
+        self.tfs = tfs
+        self.tfi = tfi
+        self.tw = tw
+
+    def A(self):
+        a = (self.bfs * self.tfs) + (self.bfi * self.tfi) + ((self.d - self.tfs - self.tfi) * tw)
+        return a
+    
+    def cg(self):
+        A = Perfilhsoldado2.A(self)
+        Ay_sum = (self.bfi * self.tfi * (self.tfi/2)) + \
+             (self.h * self.tw * (self.tfi + self.h/2)) + \
+             (self.bfs * self.tfs * (self.d - self.tfs/2))
+        return Ay_sum / A
+    
+    def Ix(self):
+        y_cg = Perfilhsoldado2.cg(self)
+        Ix_bfi = (self.bfi * self.tfi**3)/12 + (self.bfi * self.tfi) * (y_cg - self.tfi/2)**2
+        # Alma
+        Ix_web = (self.tw * self.h**3)/12 + (self.tw * self.h) * (y_cg - (self.tfi + self.h/2))**2
+        # Ala superior
+        Ix_bfs = (self.bfs * self.tfs**3)/12 + (self.bfs * self.tfs) * (self.d - self.tfs/2 - y_cg)**2
+    
+        Ix = Ix_bfi + Ix_web + Ix_bfs
+        return Ix
+    
+    def Iy(self):
+        Iy_bfi = (self.tfi * self.bfi**3)/12
+        Iy_web = (self.h * self.tw**3)/12
+        Iy_bfs = (self.tfs * self.bfs**3)/12
+    
+        Iy = Iy_bfi + Iy_web + Iy_bfs
+        return Iy
+    
+    def rx(self):
+        Ix = Perfilhsoldado2.Ix(self)
+        A = Perfilhsoldado2.A(self)
+        return (Ix / A)**0.5
+    
+    def ry(self):
+        Iy= Perfilhsoldado2.Iy(self)
+        A = Perfilhsoldado2.A(self)
+        return (Iy/ A)**0.5
+    
+    def Sx(self):
+        y_cg = Perfilhsoldado2.cg(self)
+        Ix = Perfilhsoldado2.Ix(self)
+        dist_top = self.d - y_cg
+        dist_bot = y_cg
+        Sx_top = Ix / dist_top
+        Sx_bot = Ix / dist_bot
+        Sx = min(Sx_top, Sx_bot)
+        return Sx
+    
+    def Zx(self):
+        A = Perfilhsoldado2.A(self)
+        target_area = A / 2
+
+        if (self.bfs * self.tfs) < target_area and ((self.bfs * self.tfs) + (self.h * self.tw)) > target_area:
+            A_top_flange = self.bfs * self.tfs
+            # Área necesaria del alma para llegar a target_area
+            A_web_needed = target_area - A_top_flange
+            dist_pna_from_top_flange = A_web_needed / self.tw
+            y_pna = self.d - self.tfs - dist_pna_from_top_flange # Desde abajo
+        
+            # Momento estático de áreas respecto al PNA
+            # Arriba PNA
+            M_top = (self.bfs * self.tfs * (dist_pna_from_top_flange + self.tfs/2)) + \
+                (self.tw * dist_pna_from_top_flange * (dist_pna_from_top_flange/2))
+            # Abajo PNA
+            dist_pna_web_bot = self.h - dist_pna_from_top_flange
+            M_bot = (self.bfi * self.tfi * (dist_pna_web_bot + self.tfi/2)) + \
+                    (self.tw * dist_pna_web_bot * (dist_pna_web_bot/2))
+            
+            Zx = M_top + M_bot
+            print(f"PNA = {y_pna} mm (desde abajo)")
+        else:
+            # Simplificación si el PNA cae en las alas (raro en perfiles H normales)
+            Zx = "Zx no se puede calcular" # Placeholder para casos exóticos no cubiertos en este script simple
+        return Zx
+    
+    def Zy(self):
+        Zy_flanges = (self.tfs * self.bfs**2)/4 + (self.tfi * self.bfi**2)/4
+        Zy_web = (self.h * self.tw**2)/4
+        Zy = Zy_flanges + Zy_web
+        return Zy
+    
+    #Propiedades flexotorsionales
+    def J(self):
+        J = (1/3) * (self.bfs * self.tfs**3 + self.bfi * self.tfi**3 + self.h * tw**3)
+        return J
+    
+    #Cw (aproximado para perfiles con distintos tamaños de ala)
+    def Cw(self):
+        Iy = Perfilhsoldado2.Iy(self)
+        # Fórmula aproximada para doble simetría o leve asimetría
+        # h0: distancia entre centroides de alas
+        h0 = self.d - (self.tfs/2) - (self.tfi/2) 
+        # Para mayor precisión en asimétricos, Cw es más complejo, 
+        # pero usamos la aproximación estándar de diseño:
+        if self.bfs == self.bfi and self.tfs == self.tfi:
+            # Doble simetría
+            Cw = (Iy * h0**2) / 4
+        else:
+            # Monosimétrica aproximada (AISC Design Guide 9)
+            Iy_top = (self.tfs * self.bfs**3)/12
+            Iy_bot = (self.tfi * self.bfi**3)/12
+            Cw = (h0**2 * Iy_top * Iy_bot) / (Iy_top + Iy_bot)
+        return Cw
+
+    #Radio de giro efectivo para pandeo lateral torsional (r_ts)
+    def it(self):
+        it = (self.bfs * self.tfs) / self.d
+        return it
+
+    #ia (o r0): radio de giro polar respecto al centro de corte
+    def ia(self):
+        Iy = Perfilhsoldado2.Iy(self)
+        Sx = Perfilhsoldado2.Sx(self)
+        try:
+            ia = np.sqrt((self.d * Iy) / (2 * Sx))
+        except ValueError:
+            ia = 0
+        return ia
+    
+    def X1(self):
+        A = Perfilhsoldado2.A(self)
+        Sx = Perfilhsoldado2.Sx(self)
+        Iy = Perfilhsoldado2.Iy(self)
+        J = Perfilhsoldado2.J(self)
+        term_1 = (np.pi / Sx)
+        X1 = term_1 * np.sqrt((E * A * G * J)/2)
+        return X1
+    
+    def X2(self):
+        Sx = Perfilhsoldado2.Sx(self)
+        Iy = Perfilhsoldado2.Iy(self)
+        J = Perfilhsoldado2.J(self)
+        Cw = Perfilhsoldado2.Cw(self)
+        X2 = 4 * (Cw / Iy) * ((Sx / (G * J))**2)
+        return X2
 
 class Perfilhsoldado:
     def __init__(self, h, bf, tf, tw):
@@ -989,16 +1138,16 @@ class Perfiltubularcircular:
         return j
 
 #754 - 80
-D = 12.7 #mm
-t = 0.9 #mm
+# D = 12.7 #mm
+# t = 0.9 #mm
 
-perfilcircular = Perfiltubularcircular(D, t)
-print(f"A: {perfilcircular.A()} mm2")
-print(f"I: {perfilcircular.I()/10**6} mm4")
-print(f"S: {perfilcircular.S()/10**3} mm3")
-print(f"r: {perfilcircular.rxy()} mm")
-print(f"Z: {perfilcircular.Z()/10**3} mm3")
-print(f"J: {perfilcircular.J()/10**4} mm4")
+# perfilcircular = Perfiltubularcircular(D, t)
+# print(f"A: {perfilcircular.A()} mm2")
+# print(f"I: {perfilcircular.I()/10**6} mm4")
+# print(f"S: {perfilcircular.S()/10**3} mm3")
+# print(f"r: {perfilcircular.rxy()} mm")
+# print(f"Z: {perfilcircular.Z()/10**3} mm3")
+# print(f"J: {perfilcircular.J()/10**4} mm4")
 
 
 
