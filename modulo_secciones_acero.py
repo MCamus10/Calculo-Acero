@@ -7,6 +7,8 @@ from materiales import E, G
 
 #Perfilhsoldado contiene las fórmulas para las propiedades de una viga H con alas de distinta medida.
 #Para perfil H simetrico utilizar Perfilhsoldado
+
+
 class Perfilhsoldado:
     def __init__(self, h, bfs, bfi, tfs, tfi, tw):
         self.h = h #altura alma
@@ -164,92 +166,6 @@ class Perfilhsoldado:
         Cw = Perfilhsoldado.Cw(self)
         X2 = 4 * (Cw / Iy) * ((Sx / (G * J))**2)
         return X2
-
-
-    def __init__(self, h, bf, tf, tw):
-        self.h = h
-        self.bf = bf
-        self.tf = tf
-        self.tw = tw
-        self.d = self.h + 2*self.tf
-
-    def A(self):
-        a = 2 * self.bf * self.tf + self.h * self.tw
-        return a
-
-    #Momentos de inercia
-    def Ix(self):
-        ix = (self.bf * self.d**3 - (self.bf - self.tw)*self.h**3)/12
-        return ix   
-    
-    def Iy(self):
-        iy = (2 * self.tf * self.bf**3 + self.h * self.tw**3)/12
-        return iy
-    
-    def rx(self):
-        Ix = Perfilhsoldado.Ix(self)
-        A = Perfilhsoldado.A(self)
-        rx = np.sqrt(Ix / A)
-        return rx
-    
-    def ry(self):
-        Iy = Perfilhsoldado.Iy(self)
-        A = Perfilhsoldado.A(self)
-        ry = np.sqrt(Iy / A)
-        return ry
-    
-    def Sx(self):
-        Ix = Perfilhsoldado.Ix(self)
-        sx = Ix/(self.d/2)
-        return sx
-    
-    def Sy(self):
-        Iy = Perfilhsoldado.Iy(self)
-        sy = Iy/(self.bf/2)
-        return sy
-    
-    #Módulos plásticos
-    def Zx(self):
-        zx = self.bf * self.tf * (self.h + self.tf) + self.tw * self.h**2 / 4
-        return zx
-    
-    def Zy(self):
-        zy = self.tf * self.bf**2 /2 + self.h * self.tw**2 /4
-        return zy
-    
-    #Propiedades flexo torsionales
-    def J(self):
-        j = (2 * self.bf * self.tf**3 + (self.h + self.tf) * self.tw**3) /3
-        return j
-    
-    def Cw(self):
-        cw = self.tf * self.bf**3 * (self.h + self.tf)**2 /24
-        return cw
-    
-    def ia(self):
-        Iy = Perfilhsoldado.Iy(self)
-        Sx = Perfilhsoldado.Sx(self)
-        ia = np.sqrt(self.d * Iy / (2* Sx))
-        return ia
-    
-    def it(self):
-        it = self.bf * self.tf / self.d
-        return it
-    
-    def X1(self):
-        Sx = Perfilhsoldado.Sx(self)
-        J = Perfilhsoldado.J(self)
-        A = Perfilhsoldado.A(self)
-        x1 = np.pi/Sx * np.sqrt(E * G * J * A /2)
-        return x1
-    
-    def X2(self):
-        Cw = Perfilhsoldado.Cw(self)
-        Iy = Perfilhsoldado.Iy(self)
-        Sx = Perfilhsoldado.Sx(self)
-        J = Perfilhsoldado.J(self)
-        x2 = 4* Cw / Iy * (Sx / G / J)**2
-        return x2
 
 class Perfiltsoldado:
     def __init__(self, h, bf, tf, tw):
