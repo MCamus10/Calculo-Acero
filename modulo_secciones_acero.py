@@ -94,7 +94,6 @@ class Perfilhsoldado:
                     (self.tw * dist_pna_web_bot * (dist_pna_web_bot/2))
             
             Zx = M_top + M_bot
-            print(f"PNA = {y_pna} mm (desde abajo)")
         else:
             # Simplificación si el PNA cae en las alas (raro en perfiles H normales)
             Zx = "Zx no se puede calcular" # Placeholder para casos exóticos no cubiertos en este script simple
@@ -166,6 +165,24 @@ class Perfilhsoldado:
         Cw = Perfilhsoldado.Cw(self)
         X2 = 4 * (Cw / Iy) * ((Sx / (G * J))**2)
         return X2
+    
+    def hp(self): #Calcula distancia entre el ala superior y el PNA
+        #Esta funcion devuelve hp, como se define en Tabla B4.1b, caso 16.
+        A = Perfilhsoldado.A(self)
+        target_area = A / 2
+        area_top = self.bfs * self.tfs
+        area_web = self.h * self.tw
+        if (area_top + area_web) >= target_area: #Verificamos si el PNA se encuentra en el alma
+            area_faltante = target_area - area_top
+            hp = 2 * (area_faltante / self.tw) #Calcula la distancia entre la parte de abajo del ala superior y el PNA.
+            return hp
+        else:
+            raise ValueError("El PNA se encuentra en un Ala. Revisar dimensiones.")
+        
+    def hc(self): #Calcula distancia entre el ala superior y el ENA
+        cg = Perfilhsoldado.cg(self)
+        hc = 2 * (self.d - cg - self.tfs)
+        return hc
 
 class Perfiltsoldado:
     def __init__(self, h, bf, tf, tw):
