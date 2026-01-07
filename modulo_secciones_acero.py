@@ -5,11 +5,11 @@ from materiales import E, G
 
 #Formulas obtenidas de manual ICHA
 
-#Perfilhsoldado2 contiene las fórmulas para las propiedades de una viga H con alas de distinta medida.
+#Perfilhsoldado contiene las fórmulas para las propiedades de una viga H con alas de distinta medida.
 #Para perfil H simetrico utilizar Perfilhsoldado
-class Perfilhsoldado2:
+class Perfilhsoldado:
     def __init__(self, h, bfs, bfi, tfs, tfi, tw):
-        self.h = h
+        self.h = h #altura alma
         self.d = h + tfs + tfi
         self.bfs = bfs
         self.bfi = bfi
@@ -18,18 +18,18 @@ class Perfilhsoldado2:
         self.tw = tw
 
     def A(self):
-        a = (self.bfs * self.tfs) + (self.bfi * self.tfi) + ((self.d - self.tfs - self.tfi) * tw)
+        a = (self.bfs * self.tfs) + (self.bfi * self.tfi) + ((self.d - self.tfs - self.tfi) * self.tw)
         return a
     
     def cg(self):
-        A = Perfilhsoldado2.A(self)
+        A = Perfilhsoldado.A(self)
         Ay_sum = (self.bfi * self.tfi * (self.tfi/2)) + \
              (self.h * self.tw * (self.tfi + self.h/2)) + \
              (self.bfs * self.tfs * (self.d - self.tfs/2))
         return Ay_sum / A
     
     def Ix(self):
-        y_cg = Perfilhsoldado2.cg(self)
+        y_cg = Perfilhsoldado.cg(self)
         Ix_bfi = (self.bfi * self.tfi**3)/12 + (self.bfi * self.tfi) * (y_cg - self.tfi/2)**2
         # Alma
         Ix_web = (self.tw * self.h**3)/12 + (self.tw * self.h) * (y_cg - (self.tfi + self.h/2))**2
@@ -48,27 +48,31 @@ class Perfilhsoldado2:
         return Iy
     
     def rx(self):
-        Ix = Perfilhsoldado2.Ix(self)
-        A = Perfilhsoldado2.A(self)
+        Ix = Perfilhsoldado.Ix(self)
+        A = Perfilhsoldado.A(self)
         return (Ix / A)**0.5
     
     def ry(self):
-        Iy= Perfilhsoldado2.Iy(self)
-        A = Perfilhsoldado2.A(self)
+        Iy= Perfilhsoldado.Iy(self)
+        A = Perfilhsoldado.A(self)
         return (Iy/ A)**0.5
     
-    def Sx(self):
-        y_cg = Perfilhsoldado2.cg(self)
-        Ix = Perfilhsoldado2.Ix(self)
+    def Sx_sup(self):
+        y_cg = Perfilhsoldado.cg(self)
+        Ix = Perfilhsoldado.Ix(self)
         dist_top = self.d - y_cg
+        Sx_sup = Ix / dist_top
+        return Sx_sup
+    
+    def Sx_inf(self):
+        y_cg = Perfilhsoldado.cg(self)
+        Ix = Perfilhsoldado.Ix(self)
         dist_bot = y_cg
-        Sx_top = Ix / dist_top
-        Sx_bot = Ix / dist_bot
-        Sx = min(Sx_top, Sx_bot)
-        return Sx
+        Sx_inf = Ix / dist_bot
+        return Sx_inf
     
     def Zx(self):
-        A = Perfilhsoldado2.A(self)
+        A = Perfilhsoldado.A(self)
         target_area = A / 2
 
         if (self.bfs * self.tfs) < target_area and ((self.bfs * self.tfs) + (self.h * self.tw)) > target_area:
@@ -102,12 +106,12 @@ class Perfilhsoldado2:
     
     #Propiedades flexotorsionales
     def J(self):
-        J = (1/3) * (self.bfs * self.tfs**3 + self.bfi * self.tfi**3 + self.h * tw**3)
+        J = (1/3) * (self.bfs * self.tfs**3 + self.bfi * self.tfi**3 + self.h * self.tw**3)
         return J
     
     #Cw (aproximado para perfiles con distintos tamaños de ala)
     def Cw(self):
-        Iy = Perfilhsoldado2.Iy(self)
+        Iy = Perfilhsoldado.Iy(self)
         # Fórmula aproximada para doble simetría o leve asimetría
         # h0: distancia entre centroides de alas
         h0 = self.d - (self.tfs/2) - (self.tfi/2) 
@@ -130,8 +134,10 @@ class Perfilhsoldado2:
 
     #ia (o r0): radio de giro polar respecto al centro de corte
     def ia(self):
-        Iy = Perfilhsoldado2.Iy(self)
-        Sx = Perfilhsoldado2.Sx(self)
+        Iy = Perfilhsoldado.Iy(self)
+        Sx_sup = Perfilhsoldado.Sx_sup(self)
+        Sx_inf = Perfilhsoldado.Sx_inf(self)
+        Sx = min(Sx_sup, Sx_inf)
         try:
             ia = np.sqrt((self.d * Iy) / (2 * Sx))
         except ValueError:
@@ -139,23 +145,27 @@ class Perfilhsoldado2:
         return ia
     
     def X1(self):
-        A = Perfilhsoldado2.A(self)
-        Sx = Perfilhsoldado2.Sx(self)
-        Iy = Perfilhsoldado2.Iy(self)
-        J = Perfilhsoldado2.J(self)
+        A = Perfilhsoldado.A(self)
+        Sx_sup = Perfilhsoldado.Sx_sup(self)
+        Sx_inf = Perfilhsoldado.Sx_inf(self)
+        Sx = min(Sx_sup, Sx_inf)
+        Iy = Perfilhsoldado.Iy(self)
+        J = Perfilhsoldado.J(self)
         term_1 = (np.pi / Sx)
         X1 = term_1 * np.sqrt((E * A * G * J)/2)
         return X1
     
     def X2(self):
-        Sx = Perfilhsoldado2.Sx(self)
-        Iy = Perfilhsoldado2.Iy(self)
-        J = Perfilhsoldado2.J(self)
-        Cw = Perfilhsoldado2.Cw(self)
+        Sx_sup = Perfilhsoldado.Sx_sup(self)
+        Sx_inf = Perfilhsoldado.Sx_inf(self)
+        Sx = min(Sx_sup, Sx_inf)
+        Iy = Perfilhsoldado.Iy(self)
+        J = Perfilhsoldado.J(self)
+        Cw = Perfilhsoldado.Cw(self)
         X2 = 4 * (Cw / Iy) * ((Sx / (G * J))**2)
         return X2
 
-class Perfilhsoldado:
+
     def __init__(self, h, bf, tf, tw):
         self.h = h
         self.bf = bf
