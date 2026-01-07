@@ -276,5 +276,3 @@ class Elemento_en_compresion_por_flexion:
         return clasificar(razon, lim_inf, lim_sup)
         
 
-elem2 = Elemento_en_compresion_por_flexion(D=20, t=3)
-print(elem2.caso20())

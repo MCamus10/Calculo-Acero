@@ -1080,17 +1080,7 @@ class Perfiltubularcircular:
         j = 2*I
         return j
 
-#754 - 80
-# D = 12.7 #mm
-# t = 0.9 #mm
 
-# perfilcircular = Perfiltubularcircular(D, t)
-# print(f"A: {perfilcircular.A()} mm2")
-# print(f"I: {perfilcircular.I()/10**6} mm4")
-# print(f"S: {perfilcircular.S()/10**3} mm3")
-# print(f"r: {perfilcircular.rxy()} mm")
-# print(f"Z: {perfilcircular.Z()/10**3} mm3")
-# print(f"J: {perfilcircular.J()/10**4} mm4")
 
 
 
