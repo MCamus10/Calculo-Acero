@@ -1,4 +1,5 @@
 #Propiedades del acero
 E = 200000 #MPa
 G = 77200 #MPa
-fy = 4200 #kg/cm2
+fy = 2530 #kg/cm2 (A36)
+fu = 4000 #kg/cm2
